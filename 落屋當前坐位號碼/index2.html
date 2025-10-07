@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <title>洛屋 叫號系統</title>
+    <link rel="stylesheet" href="./style/style.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+  </head>
+
+  <body>
+    <div class="news-contents wrapper">
+      <article>
+        <img src="OX.png" />
+        <h1>內用當前號碼</h1>
+        <h3 class="number">0</h3>
+
+        <h2> 獲取最新號碼,請從新整理</h2>
+
+        <p>注意事项：</p>
+        <ol>
+          <li>
+            依照洛屋經驗每個號碼吃飯時間約<font color="red">20~25</font>分鐘。
+          </li>
+          <li>過號後，請回現場通知服務人員，虛延後1號。</li>
+          <li>當前號碼與您手邊號碼相聚3個號碼內請回現長等候</li>
+        </ol>
+        <ul>
+          <li><strong>假日人數較多，感謝大家耐心等候。</strong></li>
+          <li>更多资讯
+            <FB><a href=https://reurl.cc/6q6xkV>FB</a></FB>
+            <IG><a href="https://www.instagram.com/rakuya.ramen/">IG</a></IG>
+          </li>
+        </ul>
+      </article>
+    </div>
+    <footer>
+      <div class="wrapper">
+        <a><small>&copy; 2022 Manabox</small></a>
+      </div>
+    </footer>
+
+    <script>
+      // 顾客端自动更新号码
+      function updateNumber() {
+        const numberElement = document.querySelector('.number');
+        const currentNumber = parseInt(localStorage.getItem('currentNumber')) || 0;
+        numberElement.textContent = currentNumber;
+      }
+
+      // 监听 storage 事件，确保其他页面更新
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'currentNumber') {
+          updateNumber();
+        }
+      });
+
+      // 页面加载时也需要更新一次
+      updateNumber();
+    </script>
+  </body>
+</html>
