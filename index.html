@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/144/restaurant-menu.png">
+    
+    <title>洛瓔叫貨系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 針對手機 App 體驗優化 */
+        body { -webkit-tap-highlight-color: transparent; }
+        .checked { background-color: #f0fdf4; opacity: 0.7; text-decoration: line-through; }
+        .is-off-tomorrow { border-left: 6px solid #ef4444; background-color: #fef2f2; }
+        .is-arrival-conflict { border-left: 6px solid #f59e0b; background-color: #fffbeb; }
+        .soup-style { background-color: #ffedd5 !important; border: 1px solid #fb923c !important; color: #7c2d12 !important; }
+        
+        @keyframes bounce-custom {
+            0%, 100% { transform: translateY(-15%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        }
+        .animate-bounce-custom { animation: bounce-custom 0.8s infinite; display: inline-block; }
+    </style>
+</head>
+<body class="bg-slate-100 pb-40 text-slate-800 font-sans">
+    <div class="max-w-md mx-auto p-4 pt-6">
+        
+        <div id="smartAlert" class="mb-4 hidden">
+            <div id="alertBox" class="bg-slate-900 text-white p-4 rounded-xl shadow-2xl text-sm font-bold flex flex-col gap-2 ring-2 ring-orange-500">
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">洛瓔叫貨系統</h1>
+            <div class="flex gap-2">
+                <button onclick="toggleSettings()" class="bg-slate-200 text-slate-600 text-[10px] px-2 py-1 rounded-full shadow-sm">⚙️ 特殊休設定</button>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 p-4 rounded-2xl shadow-lg mb-6 border-b-4 border-slate-950">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-600 pb-2">
+                <h2 class="font-bold text-white flex items-center">📊 每日群組回報量</h2>
+                <div class="flex gap-2">
+                    <button onclick="resetAllNumbers()" class="bg-slate-700 text-slate-300 border border-slate-600 text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">🧹 歸零</button>
+                    <button onclick="copyDailyReport()" class="bg-orange-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold shadow-md active:scale-95 transition">📋 複製文字</button>
+                </div>
+            </div>
+            <div class="space-y-3" id="dailyReportContainer"></div>
+        </div>
+
+        <div id="settingsPanel" class="hidden mb-6 bg-white p-4 rounded-xl shadow-md border-2 border-indigo-100">
+            <h3 class="font-bold mb-2 text-sm text-slate-700">🗓️ 設定特殊店休日期</h3>
+            <div class="space-y-2">
+                <select id="vendorSelect" class="w-full border rounded p-2 text-sm bg-slate-50 outline-none"></select>
+                <div class="flex gap-2">
+                    <input type="date" id="specialOffDate" class="flex-1 border rounded p-2 text-sm">
+                    <button onclick="addSpecialOff()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold">新增</button>
+                </div>
+            </div>
+            <div id="specialOffList" class="mt-3 flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-dashed border-slate-400">
+            <h3 class="font-bold text-slate-700 mb-2 text-sm text-center">➕ 臨時手動品項</h3>
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="customName" placeholder="品項" class="flex-1 border rounded px-2 py-1 text-sm outline-none">
+                <button onclick="addCustomItem()" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold">新增</button>
+            </div>
+            <div id="customList" class="space-y-2"></div>
+        </div>
+
+        <div id="categoryContainer" class="space-y-4"></div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t p-4 flex justify-around shadow-inner z-50 pb-8">
+        <button onclick="resetCheckboxes()" class="flex flex-col items-center text-slate-600">
+            <span class="text-xl">🔄</span><span class="text-[10px]">清空勾選</span>
+        </button>
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center text-orange-600 font-bold">
+            <span class="text-xl">📝</span><span class="text-[10px]">回報區</span>
+        </button>
+    </div>
+
+    <script>
+        const vendors = [
+            { id:0, name: "生蛋", lead: 1, off: [0], items: ["洗選白蛋（中）。1籃"] },
+            { id:1, name: "溏心蛋", lead: 4, off: [0,2,3,4,6], items: ["白玉溏心蛋（軟）。1箱 (到貨日:一、五)"] },
+            { id:2, name: "米", lead: 1, off: [6,0], items: ["台梗九號。1包"] },
+            { id:3, name: "麵", lead: 3, off: [6,0], items: ["全麥A1 ：50斤（250球）"] },
+            { id:4, name: "蛤仔、蜆仔", lead: 3, off: [0], items: ["蛤仔。30斤", "蜆仔。12斤"] },
+            { id:5, name: "白蝦身與蝦頭", lead: 5, off: [6,0], items: ["白蝦80/100。24盒（12盒一單位）", "胭脂蝦頭。18包"] },
+            { id:6, name: "雞肉商", lead: 3, off: [3,6,0], items: ["雞胸骨。15kg（5kg一包）", "雞油。5kg（5kg一包）", "豬里肌油。5kg（5kg一包）", "雞短頸去皮。12kg（6kg一包）", "山雞1.5kg。2隻（對半切）", "小雞爪。18kg（6kg一包）", "W6雞翅分。18kg（6kg一包）", "修清雞胸肉（帶皮）。20kg", "雞腿排去踝。20kg"] },
+            { id:7, name: "雜貨", lead: 1, off: [6,0], items: ["烹大師干貝粉", "二砂", "穀盛味醂", "金蘭醬油", "玉山白蘭地", "漂白水", "洗衣粉", "3斤花袋", "小抽衛生紙", "廚房擦手紙", "小磨坊香蒜粉", "拇指粗粒黑胡椒", "保鮮膜", "美食家沙拉油", "海鹽", "青花椒粒600g", "大紅袍粒600g", "抹布"] },
+            { id:8, name: "廚餘", lead: 1, off: [], items: ["廚餘回報。全年無休"] },
+            { id:9, name: "冰塊", lead: 1, off: [0], items: ["冰塊需求"] }
+        ];
+
+        let dailyValues = { "雞骨": 4, "雞油": 4, "豬里肌油": 1, "雞脖子": 0, "全雞": 0, "雞爪": 4, "雞翅": 4, "白蝦": 42, "蝦頭": 18, "雞湯": 4, "蝦湯": 4.3, "貝湯": 3.3, "珠貝油": 3 };
+        let specialOffs = JSON.parse(localStorage.getItem('specialOffs')) || [];
+
+        function init() {
+            renderDailyReportInputs();
+            renderVendors();
+            updateSmartAlert();
+            renderVendorSelect();
+            renderSpecialOffList();
+        }
+
+        function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
+        function renderVendorSelect() { document.getElementById('vendorSelect').innerHTML = vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join(''); }
+
+        function addSpecialOff() {
+            const vId = document.getElementById('vendorSelect').value;
+            const vName = vendors.find(v => v.id == vId).name;
+            const date = document.getElementById('specialOffDate').value;
+            if(!date) return;
+            specialOffs.push({ vId, vName, date });
+            localStorage.setItem('specialOffs', JSON.stringify(specialOffs));
+            renderSpecialOffList(); renderVendors(); updateSmartAlert();
+        }
+
+        function removeSpecialOff(index) {
+            specialOffs.splice(index, 1);
+            localStorage.setItem('specialOffs', JSON.stringify(specialOffs));
+            renderSpecialOffList(); renderVendors(); updateSmartAlert();
+        }
+
+        function renderSpecialOffList() {
+            document.getElementById('specialOffList').innerHTML = specialOffs.map((s, i) => `
+                <span class="bg-red-100 text-red-700 text-[10px] px-2 py-1 rounded-full flex items-center">
+                    ${s.vName}: ${s.date.split('-').slice(1).join('/')} <button onclick="removeSpecialOff(${i})" class="ml-1 font-bold">✕</button>
+                </span>
+            `).join('');
+        }
+
+        function isThisDayOff(vId, offDays, targetDate) {
+            const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+            const isSpecial = specialOffs.some(s => s.vId == vId && s.date == dateStr);
+            const isFixed = offDays.includes(targetDate.getDay());
+            return isSpecial || isFixed;
+        }
+
+        function getArrivalInfo(leadDays, offDays, vendorId) {
+            let arrivalDate = new Date();
+            arrivalDate.setDate(arrivalDate.getDate() + parseInt(leadDays));
+            let isConflict = isThisDayOff(vendorId, offDays, arrivalDate);
+            let suggestText = "";
+            let orderTimeText = "今日叫貨";
+
+            if (isConflict) {
+                let nextAvailable = new Date(arrivalDate);
+                for (let i = 1; i <= 10; i++) {
+                    nextAvailable.setDate(nextAvailable.getDate() + 1);
+                    if (!isThisDayOff(vendorId, offDays, nextAvailable)) {
+                        const dayName = ["日","一","二","三","四","五","六"][nextAvailable.getDay()];
+                        suggestText = `最近配送日：${nextAvailable.getMonth()+1}/${nextAvailable.getDate()} (${dayName})`;
+                        let bestOrderDate = new Date(nextAvailable);
+                        bestOrderDate.setDate(bestOrderDate.getDate() - parseInt(leadDays));
+                        const orderDayName = ["日","一","二","三","四","五","六"][bestOrderDate.getDay()];
+                        orderTimeText = `建議 ${bestOrderDate.getMonth()+1}/${bestOrderDate.getDate()} (${orderDayName}) 再叫貨`;
+                        break;
+                    }
+                }
+            }
+            return {
+                text: `${arrivalDate.getMonth()+1}/${arrivalDate.getDate()} (${["日","一","二","三","四","五","六"][arrivalDate.getDay()]})`,
+                isConflict, suggest: suggestText, orderTime: orderTimeText
+            };
+        }
+
+        function updateSmartAlert() {
+            const tomorrow = (new Date().getDay() + 1) % 7;
+            let alerts = [];
+            vendors.forEach(v => {
+                const info = getArrivalInfo(v.lead, v.off, v.id);
+                if (v.off.includes(tomorrow)) alerts.push(`<span class="text-red-400">🚨 ${v.name}明天公休！</span>`);
+                if (info.isConflict) alerts.push(`<span class="text-yellow-400 font-bold">⚠️ ${v.name}配送衝突。${info.suggest}</span>`);
+            });
+            const alertBoxContainer = document.getElementById('smartAlert');
+            if (alerts.length > 0) {
+                alertBoxContainer.classList.remove('hidden');
+                document.getElementById('alertBox').innerHTML = alerts.map(a => `<div>${a}</div>`).join('');
+            } else alertBoxContainer.classList.add('hidden');
+        }
+
+        function renderDailyReportInputs() {
+            const container = document.getElementById('dailyReportContainer');
+            const groups = [ ["雞骨", "雞油", "豬里肌油"], ["雞脖子", "全雞"], ["雞爪", "雞翅"], ["白蝦", "蝦頭"], {s:true, f:["雞湯", "蝦湯", "貝湯"]}, {s:true, f:["珠貝油"]} ];
+            container.innerHTML = groups.map(g => {
+                const fs = g.f || g;
+                return `<div class="grid grid-cols-2 gap-2">${fs.map(f => `
+                    <div class="flex items-center justify-between p-2 rounded-lg ${g.s ? 'soup-style' : 'bg-slate-700'}">
+                        <span class="text-xs font-bold ${g.s ? 'text-orange-900' : 'text-slate-200'}">${f}</span>
+                        <input type="number" step="0.1" value="${dailyValues[f]}" onchange="dailyValues['${f}']=this.value" class="w-14 bg-white text-slate-900 text-center rounded font-bold py-1 outline-none border border-slate-500">
+                    </div>`).join('')}</div>`;
+            }).join('<div class="h-[1px] bg-slate-600 opacity-50 my-1"></div>');
+        }
+
+        function renderVendors() {
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = vendors.map(v => {
+                const info = getArrivalInfo(v.lead, v.off, v.id);
+                const isOffTomorrow = v.off.includes((new Date().getDay() + 1) % 7);
+                let cardClass = isOffTomorrow ? 'is-off-tomorrow border-red-400 shadow-red-100' : (info.isConflict ? 'is-arrival-conflict border-amber-400 shadow-amber-100' : 'border-slate-200 shadow-sm');
+                return `
+                    <div class="bg-white rounded-xl border ${cardClass} overflow-hidden">
+                        <div class="bg-slate-50 px-4 py-2 border-b flex justify-between items-start">
+                            <div>
+                                <div class="font-black text-slate-800 text-sm">${v.name}</div>
+                                <div class="text-[10px] ${info.isConflict ? 'text-red-500 font-bold' : 'text-slate-500'}">⏰ ${info.orderTime}</div>
+                            </div>
+                            <div class="text-right text-[10px]">
+                                <div class="${isOffTomorrow ? 'text-red-500 font-bold' : 'text-slate-400'}">公休: ${v.off.map(d=>["日","一","二","三","四","五","六"][d]).join(',')}</div>
+                                <div class="${info.isConflict ? 'text-red-600 font-black' : 'text-indigo-600 font-bold'}">
+                                    <span class="${info.isConflict ? 'animate-bounce-custom text-xs' : ''}">🚚 ${info.text} ${info.isConflict ? '無配送' : '送達'}</span>
+                                    ${info.isConflict ? `<div class="text-[9px] text-red-500 font-black mt-0.5 bg-red-50 px-1 rounded">${info.suggest}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-2 space-y-1">
+                            ${v.items.map(item => `<label class="flex items-center p-2 rounded-lg text-xs active:bg-slate-100 cursor-pointer"><input type="checkbox" class="w-4 h-4 rounded mr-3 text-slate-600" onchange="toggleRow(this)"><span class="flex-1 text-slate-700">${item}</span><input type="number" placeholder="量" class="w-10 border-b border-slate-300 text-center outline-none"></label>`).join('')}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function toggleRow(el) { el.parentElement.classList.toggle('checked', el.checked); }
+        function addCustomItem() {
+            const name = document.getElementById('customName').value;
+            if(!name) return;
+            const div = document.createElement('div');
+            div.className = "flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm";
+            div.innerHTML = `<input type="checkbox" class="w-4 h-4 mr-3" onchange="toggleRow(this)"><span class="flex-1 text-xs font-medium text-slate-700">${name}</span><button onclick="this.parentElement.remove()" class="text-slate-300 ml-2">✕</button>`;
+            document.getElementById('customList').appendChild(div);
+            document.getElementById('customName').value = "";
+        }
+        function copyDailyReport() {
+            let text = "";
+            const groups = [["雞骨", "雞油", "豬里肌油"], ["雞脖子", "全雞"], ["雞爪", "雞翅"], ["白蝦", "蝦頭"], ["雞湯", "蝦湯", "貝湯"], ["珠貝油"]];
+            groups.forEach(g => { g.forEach(f => { let v = dailyValues[f] || 0; let u = f==="蝦頭"?"包":f==="白蝦"?"盒":(f.includes("湯")||f.includes("油")?"":"份"); text += `${f}。${v}${u}\n`; }); text += "\n"; });
+            navigator.clipboard.writeText(text.trim());
+            alert("✅ 已複製文字！");
+        }
+        function resetAllNumbers() { if(confirm("確定要將所有數量歸零嗎？")) { document.querySelectorAll('input[type="number"]').forEach(i => i.value = ""); Object.keys(dailyValues).forEach(k => dailyValues[k] = 0); renderDailyReportInputs(); } }
+        function resetCheckboxes() { document.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = false; i.parentElement.classList.remove('checked'); }); }
+
+        init();
+    </script>
+</body>
+</html>
