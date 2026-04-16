@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/144/restaurant-menu.png">
-    
-    <title>洛瓔叫貨系統</title>
+    <title>洛瓔叫貨系統 V20</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 針對手機 App 體驗優化 */
         body { -webkit-tap-highlight-color: transparent; }
         .checked { background-color: #f0fdf4; opacity: 0.7; text-decoration: line-through; }
         .is-off-tomorrow { border-left: 6px solid #ef4444; background-color: #fef2f2; }
@@ -19,7 +13,7 @@
         .soup-style { background-color: #ffedd5 !important; border: 1px solid #fb923c !important; color: #7c2d12 !important; }
         
         @keyframes bounce-custom {
-            0%, 100% { transform: translateY(-15%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+            0%, 100% { transform: translateY(-10%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
             50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
         }
         .animate-bounce-custom { animation: bounce-custom 0.8s infinite; display: inline-block; }
@@ -28,7 +22,7 @@
 <body class="bg-slate-100 pb-40 text-slate-800 font-sans">
     <div class="max-w-md mx-auto p-4 pt-6">
         
-        <div id="smartAlert" class="mb-4 hidden">
+        <div id="smartAlert" style="display: none;" class="mb-4">
             <div id="alertBox" class="bg-slate-900 text-white p-4 rounded-xl shadow-2xl text-sm font-bold flex flex-col gap-2 ring-2 ring-orange-500">
             </div>
         </div>
@@ -36,37 +30,36 @@
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">洛瓔叫貨系統</h1>
             <div class="flex gap-2">
-                <button onclick="toggleSettings()" class="bg-slate-200 text-slate-600 text-[10px] px-2 py-1 rounded-full shadow-sm">⚙️ 特殊休設定</button>
+                <button type="button" onclick="toggleSettings()" class="bg-slate-200 text-slate-600 text-[10px] px-3 py-2 rounded-full shadow-sm active:bg-slate-300 font-bold">⚙️ 設定特殊休</button>
+                <button onclick="resetAllNumbers()" class="bg-red-500 text-white text-[10px] px-3 py-2 rounded-full shadow-md font-bold">🧹 歸零</button>
             </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-2xl shadow-lg mb-6 border-b-4 border-slate-950">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-600 pb-2">
-                <h2 class="font-bold text-white flex items-center">📊 每日群組回報量</h2>
-                <div class="flex gap-2">
-                    <button onclick="resetAllNumbers()" class="bg-slate-700 text-slate-300 border border-slate-600 text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">🧹 歸零</button>
-                    <button onclick="copyDailyReport()" class="bg-orange-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold shadow-md active:scale-95 transition">📋 複製文字</button>
-                </div>
-            </div>
-            <div class="space-y-3" id="dailyReportContainer"></div>
-        </div>
-
-        <div id="settingsPanel" class="hidden mb-6 bg-white p-4 rounded-xl shadow-md border-2 border-indigo-100">
-            <h3 class="font-bold mb-2 text-sm text-slate-700">🗓️ 設定特殊店休日期</h3>
+        <div id="settingsPanel" style="display: none;" class="mb-6 bg-white p-4 rounded-xl shadow-md border-2 border-indigo-100">
+            <h3 class="font-bold mb-2 text-sm text-slate-700 flex items-center">🗓️ 設定特殊公休日 (如過年、店休)</h3>
             <div class="space-y-2">
                 <select id="vendorSelect" class="w-full border rounded p-2 text-sm bg-slate-50 outline-none"></select>
                 <div class="flex gap-2">
                     <input type="date" id="specialOffDate" class="flex-1 border rounded p-2 text-sm">
-                    <button onclick="addSpecialOff()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold">新增</button>
+                    <button onclick="addSpecialOff()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold">確認新增</button>
                 </div>
             </div>
-            <div id="specialOffList" class="mt-3 flex flex-wrap gap-2"></div>
+            <div id="specialOffList" class="mt-3 flex flex-wrap gap-2 text-[10px]"></div>
+            <p class="mt-2 text-[10px] text-slate-400">* 設定後，系統會自動在計算到貨日時避開這些日期。</p>
+        </div>
+
+        <div class="bg-slate-800 p-5 rounded-2xl shadow-xl mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-orange-400 flex items-center">📊 每日群組回報量</h2>
+                <button onclick="copyDailyReport()" class="bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md active:scale-95">📋 複製文字</button>
+            </div>
+            <div class="space-y-3" id="dailyReportContainer"></div>
         </div>
 
         <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-dashed border-slate-400">
-            <h3 class="font-bold text-slate-700 mb-2 text-sm text-center">➕ 臨時手動品項</h3>
+            <h3 class="font-bold text-slate-700 mb-2 text-sm text-center">➕ 臨時手動新增品項</h3>
             <div class="flex gap-2 mb-3">
-                <input type="text" id="customName" placeholder="品項" class="flex-1 border rounded px-2 py-1 text-sm outline-none">
+                <input type="text" id="customName" placeholder="品項名稱" class="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-blue-400">
                 <button onclick="addCustomItem()" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold">新增</button>
             </div>
             <div id="customList" class="space-y-2"></div>
@@ -80,7 +73,7 @@
             <span class="text-xl">🔄</span><span class="text-[10px]">清空勾選</span>
         </button>
         <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center text-orange-600 font-bold">
-            <span class="text-xl">📝</span><span class="text-[10px]">回報區</span>
+            <span class="text-xl">📝</span><span class="text-[10px]">去回報區</span>
         </button>
     </div>
 
@@ -109,8 +102,15 @@
             renderSpecialOffList();
         }
 
-        function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
-        function renderVendorSelect() { document.getElementById('vendorSelect').innerHTML = vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join(''); }
+        // --- 設定開關 ---
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function renderVendorSelect() {
+            document.getElementById('vendorSelect').innerHTML = vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+        }
 
         function addSpecialOff() {
             const vId = document.getElementById('vendorSelect').value;
@@ -130,17 +130,16 @@
 
         function renderSpecialOffList() {
             document.getElementById('specialOffList').innerHTML = specialOffs.map((s, i) => `
-                <span class="bg-red-100 text-red-700 text-[10px] px-2 py-1 rounded-full flex items-center">
+                <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center border border-red-200">
                     ${s.vName}: ${s.date.split('-').slice(1).join('/')} <button onclick="removeSpecialOff(${i})" class="ml-1 font-bold">✕</button>
                 </span>
             `).join('');
         }
 
+        // --- 配送核心邏輯 ---
         function isThisDayOff(vId, offDays, targetDate) {
             const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
-            const isSpecial = specialOffs.some(s => s.vId == vId && s.date == dateStr);
-            const isFixed = offDays.includes(targetDate.getDay());
-            return isSpecial || isFixed;
+            return specialOffs.some(s => s.vId == vId && s.date == dateStr) || offDays.includes(targetDate.getDay());
         }
 
         function getArrivalInfo(leadDays, offDays, vendorId) {
@@ -159,8 +158,7 @@
                         suggestText = `最近配送日：${nextAvailable.getMonth()+1}/${nextAvailable.getDate()} (${dayName})`;
                         let bestOrderDate = new Date(nextAvailable);
                         bestOrderDate.setDate(bestOrderDate.getDate() - parseInt(leadDays));
-                        const orderDayName = ["日","一","二","三","四","五","六"][bestOrderDate.getDay()];
-                        orderTimeText = `建議 ${bestOrderDate.getMonth()+1}/${bestOrderDate.getDate()} (${orderDayName}) 再叫貨`;
+                        orderTimeText = `建議 ${bestOrderDate.getMonth()+1}/${bestOrderDate.getDate()} 再叫貨`;
                         break;
                     }
                 }
@@ -176,14 +174,14 @@
             let alerts = [];
             vendors.forEach(v => {
                 const info = getArrivalInfo(v.lead, v.off, v.id);
-                if (v.off.includes(tomorrow)) alerts.push(`<span class="text-red-400">🚨 ${v.name}明天公休！</span>`);
-                if (info.isConflict) alerts.push(`<span class="text-yellow-400 font-bold">⚠️ ${v.name}配送衝突。${info.suggest}</span>`);
+                if (v.off.includes(tomorrow)) alerts.push(`<span class="text-red-400">🚨 ${v.name}明天固定公休！</span>`);
+                if (info.isConflict) alerts.push(`<span class="text-yellow-400 font-bold">⚠️ 注意：${v.name}預計到貨日撞到公休！${info.suggest}</span>`);
             });
             const alertBoxContainer = document.getElementById('smartAlert');
             if (alerts.length > 0) {
-                alertBoxContainer.classList.remove('hidden');
+                alertBoxContainer.style.display = 'block';
                 document.getElementById('alertBox').innerHTML = alerts.map(a => `<div>${a}</div>`).join('');
-            } else alertBoxContainer.classList.add('hidden');
+            } else alertBoxContainer.style.display = 'none';
         }
 
         function renderDailyReportInputs() {
@@ -191,12 +189,12 @@
             const groups = [ ["雞骨", "雞油", "豬里肌油"], ["雞脖子", "全雞"], ["雞爪", "雞翅"], ["白蝦", "蝦頭"], {s:true, f:["雞湯", "蝦湯", "貝湯"]}, {s:true, f:["珠貝油"]} ];
             container.innerHTML = groups.map(g => {
                 const fs = g.f || g;
-                return `<div class="grid grid-cols-2 gap-2">${fs.map(f => `
-                    <div class="flex items-center justify-between p-2 rounded-lg ${g.s ? 'soup-style' : 'bg-slate-700'}">
-                        <span class="text-xs font-bold ${g.s ? 'text-orange-900' : 'text-slate-200'}">${f}</span>
+                return `<div class="grid grid-cols-2 gap-3">${fs.map(f => `
+                    <div class="flex items-center justify-between p-2 rounded-lg ${g.s ? 'soup-style' : 'bg-slate-700/50'}">
+                        <span class="text-sm font-medium ${g.s ? 'text-orange-900' : 'text-slate-200'}">${f}</span>
                         <input type="number" step="0.1" value="${dailyValues[f]}" onchange="dailyValues['${f}']=this.value" class="w-14 bg-white text-slate-900 text-center rounded font-bold py-1 outline-none border border-slate-500">
                     </div>`).join('')}</div>`;
-            }).join('<div class="h-[1px] bg-slate-600 opacity-50 my-1"></div>');
+            }).join('<div class="h-[1px] bg-slate-600 opacity-20 my-1"></div>');
         }
 
         function renderVendors() {
@@ -204,9 +202,9 @@
             container.innerHTML = vendors.map(v => {
                 const info = getArrivalInfo(v.lead, v.off, v.id);
                 const isOffTomorrow = v.off.includes((new Date().getDay() + 1) % 7);
-                let cardClass = isOffTomorrow ? 'is-off-tomorrow border-red-400 shadow-red-100' : (info.isConflict ? 'is-arrival-conflict border-amber-400 shadow-amber-100' : 'border-slate-200 shadow-sm');
+                let cardClass = isOffTomorrow ? 'is-off-tomorrow border-red-400' : (info.isConflict ? 'is-arrival-conflict border-amber-400' : 'border-slate-200');
                 return `
-                    <div class="bg-white rounded-xl border ${cardClass} overflow-hidden">
+                    <div class="bg-white rounded-xl border ${cardClass} overflow-hidden shadow-sm">
                         <div class="bg-slate-50 px-4 py-2 border-b flex justify-between items-start">
                             <div>
                                 <div class="font-black text-slate-800 text-sm">${v.name}</div>
@@ -215,37 +213,46 @@
                             <div class="text-right text-[10px]">
                                 <div class="${isOffTomorrow ? 'text-red-500 font-bold' : 'text-slate-400'}">公休: ${v.off.map(d=>["日","一","二","三","四","五","六"][d]).join(',')}</div>
                                 <div class="${info.isConflict ? 'text-red-600 font-black' : 'text-indigo-600 font-bold'}">
-                                    <span class="${info.isConflict ? 'animate-bounce-custom text-xs' : ''}">🚚 ${info.text} ${info.isConflict ? '無配送' : '送達'}</span>
-                                    ${info.isConflict ? `<div class="text-[9px] text-red-500 font-black mt-0.5 bg-red-50 px-1 rounded">${info.suggest}</div>` : ''}
+                                    <span class="${info.isConflict ? 'animate-bounce-custom' : ''}">🚚 ${info.text} ${info.isConflict ? '無配送' : '到貨'}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="p-2 space-y-1">
-                            ${v.items.map(item => `<label class="flex items-center p-2 rounded-lg text-xs active:bg-slate-100 cursor-pointer"><input type="checkbox" class="w-4 h-4 rounded mr-3 text-slate-600" onchange="toggleRow(this)"><span class="flex-1 text-slate-700">${item}</span><input type="number" placeholder="量" class="w-10 border-b border-slate-300 text-center outline-none"></label>`).join('')}
+                            ${v.items.map(item => `<label class="flex items-center p-2 rounded-lg text-sm active:bg-slate-100 cursor-pointer"><input type="checkbox" class="w-5 h-5 rounded mr-3" onchange="this.parentElement.classList.toggle('checked', this.checked)"><span class="flex-1 text-slate-600">${item}</span><input type="number" placeholder="量" class="w-12 border-b border-slate-300 text-center outline-none font-bold"></label>`).join('')}
                         </div>
                     </div>`;
             }).join('');
         }
 
-        function toggleRow(el) { el.parentElement.classList.toggle('checked', el.checked); }
         function addCustomItem() {
             const name = document.getElementById('customName').value;
             if(!name) return;
             const div = document.createElement('div');
             div.className = "flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm";
-            div.innerHTML = `<input type="checkbox" class="w-4 h-4 mr-3" onchange="toggleRow(this)"><span class="flex-1 text-xs font-medium text-slate-700">${name}</span><button onclick="this.parentElement.remove()" class="text-slate-300 ml-2">✕</button>`;
+            div.innerHTML = `<input type="checkbox" class="w-5 h-5 mr-3" onchange="this.parentElement.classList.toggle('checked', this.checked)"><span class="flex-1 text-sm font-medium text-slate-700">${name}</span><button onclick="this.parentElement.remove()" class="text-slate-300 ml-2">✕</button>`;
             document.getElementById('customList').appendChild(div);
             document.getElementById('customName').value = "";
         }
+
         function copyDailyReport() {
             let text = "";
             const groups = [["雞骨", "雞油", "豬里肌油"], ["雞脖子", "全雞"], ["雞爪", "雞翅"], ["白蝦", "蝦頭"], ["雞湯", "蝦湯", "貝湯"], ["珠貝油"]];
             groups.forEach(g => { g.forEach(f => { let v = dailyValues[f] || 0; let u = f==="蝦頭"?"包":f==="白蝦"?"盒":(f.includes("湯")||f.includes("油")?"":"份"); text += `${f}。${v}${u}\n`; }); text += "\n"; });
             navigator.clipboard.writeText(text.trim());
-            alert("✅ 已複製文字！");
+            alert("✅ 已複製到剪貼簿！");
         }
-        function resetAllNumbers() { if(confirm("確定要將所有數量歸零嗎？")) { document.querySelectorAll('input[type="number"]').forEach(i => i.value = ""); Object.keys(dailyValues).forEach(k => dailyValues[k] = 0); renderDailyReportInputs(); } }
-        function resetCheckboxes() { document.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = false; i.parentElement.classList.remove('checked'); }); }
+
+        function resetAllNumbers() { 
+            if(confirm("確定歸零所有數量嗎？")) { 
+                document.querySelectorAll('input[type="number"]').forEach(i => i.value = ""); 
+                Object.keys(dailyValues).forEach(k => dailyValues[k] = 0); 
+                renderDailyReportInputs(); 
+            } 
+        }
+
+        function resetCheckboxes() { 
+            document.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = false; i.parentElement.classList.remove('checked'); }); 
+        }
 
         init();
     </script>
