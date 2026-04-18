@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>洛瓔叫貨系統 V20</title>
+    <title>洛瓔叫貨系統 V26.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { -webkit-tap-highlight-color: transparent; }
         .checked { background-color: #f0fdf4; opacity: 0.7; text-decoration: line-through; }
-        .is-off-tomorrow { border-left: 6px solid #ef4444; background-color: #fef2f2; }
-        .is-arrival-conflict { border-left: 6px solid #f59e0b; background-color: #fffbeb; }
         .soup-style { background-color: #ffedd5 !important; border: 1px solid #fb923c !important; color: #7c2d12 !important; }
+        .vendor-card { border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: white; transition: all 0.3s ease; animation: fadeInUp 0.5s ease-out forwards; }
+        .vendor-card.is-warning { border-color: #f59e0b; background-color: #fffbeb; }
+        .vendor-card.is-danger { border-color: #ef4444; background-color: #fef2f2; }
         
-        @keyframes bounce-custom {
-            0%, 100% { transform: translateY(-10%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
         }
-        .animate-bounce-custom { animation: bounce-custom 0.8s infinite; display: inline-block; }
+        .jump-animation { 
+            display: inline-block;
+            animation: jump 0.8s infinite ease-in-out; 
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-slate-100 pb-40 text-slate-800 font-sans">
+<body class="bg-slate-100 pb-48 text-slate-800 font-sans">
     <div class="max-w-md mx-auto p-4 pt-6">
         
         <div id="smartAlert" style="display: none;" class="mb-4">
@@ -27,42 +36,42 @@
             </div>
         </div>
 
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-black text-slate-800 tracking-tight">洛瓔叫貨系統</h1>
-            <div class="flex gap-2">
-                <button type="button" onclick="toggleSettings()" class="bg-slate-200 text-slate-600 text-[10px] px-3 py-2 rounded-full shadow-sm active:bg-slate-300 font-bold">⚙️ 設定特殊休</button>
-                <button onclick="resetAllNumbers()" class="bg-red-500 text-white text-[10px] px-3 py-2 rounded-full shadow-md font-bold">🧹 歸零</button>
-            </div>
-        </div>
-
-        <div id="settingsPanel" style="display: none;" class="mb-6 bg-white p-4 rounded-xl shadow-md border-2 border-indigo-100">
-            <h3 class="font-bold mb-2 text-sm text-slate-700 flex items-center">🗓️ 設定特殊公休日 (如過年、店休)</h3>
-            <div class="space-y-2">
-                <select id="vendorSelect" class="w-full border rounded p-2 text-sm bg-slate-50 outline-none"></select>
-                <div class="flex gap-2">
-                    <input type="date" id="specialOffDate" class="flex-1 border rounded p-2 text-sm">
-                    <button onclick="addSpecialOff()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold">確認新增</button>
-                </div>
-            </div>
-            <div id="specialOffList" class="mt-3 flex flex-wrap gap-2 text-[10px]"></div>
-            <p class="mt-2 text-[10px] text-slate-400">* 設定後，系統會自動在計算到貨日時避開這些日期。</p>
-        </div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-4 text-center">洛瓔叫貨系統</h1>
 
         <div class="bg-slate-800 p-5 rounded-2xl shadow-xl mb-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-orange-400 flex items-center">📊 每日群組回報量</h2>
-                <button onclick="copyDailyReport()" class="bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md active:scale-95">📋 複製文字</button>
+                <h2 class="font-bold text-green-400 flex items-center text-lg">📊 每日回報量</h2>
+                <div class="flex gap-2">
+                    <button onclick="restoreDailyValues()" class="bg-green-700 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-green-600">⏪ 復原</button>
+                    <button onclick="resetDailyNumbers()" class="bg-red-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">掃描歸零</button>
+                </div>
             </div>
-            <div class="space-y-3" id="dailyReportContainer"></div>
+            <div id="dailyReportContainer" class="space-y-3"></div>
+            <button onclick="copyDailyReport()" class="w-full mt-4 bg-green-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">📋 複製每日回報文字</button>
         </div>
 
-        <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-dashed border-slate-400">
+        <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border-2 border-slate-300">
             <h3 class="font-bold text-slate-700 mb-2 text-sm text-center">➕ 臨時手動新增品項</h3>
             <div class="flex gap-2 mb-3">
                 <input type="text" id="customName" placeholder="品項名稱" class="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-blue-400">
                 <button onclick="addCustomItem()" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold">新增</button>
             </div>
-            <div id="customList" class="space-y-2"></div>
+            <div id="customList" class="space-y-2 mb-4"></div>
+            
+            <hr class="my-4 border-slate-200">
+            <button type="button" onclick="toggleSettings()" class="w-full bg-slate-200 text-slate-600 py-2 rounded-lg text-xs font-black shadow-sm active:bg-slate-300">⚙️ 設定特殊公休日</button>
+            
+            <div id="settingsPanel" style="display: none;" class="mt-4 p-3 bg-slate-50 rounded-lg border border-indigo-100">
+                <h3 class="font-bold mb-2 text-xs text-slate-700">🗓️ 設定特殊公休</h3>
+                <div class="space-y-2">
+                    <select id="vendorSelect" class="w-full border rounded p-2 text-sm bg-white outline-none"></select>
+                    <div class="flex gap-2">
+                        <input type="date" id="specialOffDate" class="flex-1 border rounded p-2 text-sm">
+                        <button onclick="addSpecialOff()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold">確認</button>
+                    </div>
+                </div>
+                <div id="specialOffList" class="mt-3 flex flex-wrap gap-2 text-[10px]"></div>
+            </div>
         </div>
 
         <div id="categoryContainer" class="space-y-4"></div>
@@ -73,26 +82,71 @@
             <span class="text-xl">🔄</span><span class="text-[10px]">清空勾選</span>
         </button>
         <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center text-orange-600 font-bold">
-            <span class="text-xl">📝</span><span class="text-[10px]">去回報區</span>
+            <span class="text-xl">📝</span><span class="text-[10px]">回報頂部</span>
+        </button>
+        <button onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})" class="flex flex-col items-center text-blue-600 font-bold">
+            <span class="text-xl">⬇&nbsp;</span><span class="text-[10px]">一鍵至底</span>
+        </button>
+        <button onclick="alert('💾 已保存目前的輸入內容')" class="flex flex-col items-center text-indigo-600 font-bold">
+            <span class="text-xl">💾</span><span class="text-[10px]">儲存狀態</span>
         </button>
     </div>
 
     <script>
         const vendors = [
             { id:0, name: "生蛋", lead: 1, off: [0], items: ["洗選白蛋（中）。1籃"] },
-            { id:1, name: "溏心蛋", lead: 4, off: [0,2,3,4,6], items: ["白玉溏心蛋（軟）。1箱 (到貨日:一、五)"] },
+            { id:1, name: "溏心蛋", lead: 4, off: [0,2,3,4,6], items: ["白玉溏心蛋（軟）。1箱"] },
             { id:2, name: "米", lead: 1, off: [6,0], items: ["台梗九號。1包"] },
-            { id:3, name: "麵", lead: 3, off: [6,0], items: ["全麥A1 ：50斤（250球）"] },
+            { id:3, name: "麵", lead: 3, off: [6,0], items: ["全麥A1 ：50斤"] },
             { id:4, name: "蛤仔、蜆仔", lead: 3, off: [0], items: ["蛤仔。30斤", "蜆仔。12斤"] },
-            { id:5, name: "白蝦身與蝦頭", lead: 5, off: [6,0], items: ["白蝦80/100。24盒（12盒一單位）", "胭脂蝦頭。18包"] },
-            { id:6, name: "雞肉商", lead: 3, off: [3,6,0], items: ["雞胸骨。15kg（5kg一包）", "雞油。5kg（5kg一包）", "豬里肌油。5kg（5kg一包）", "雞短頸去皮。12kg（6kg一包）", "山雞1.5kg。2隻（對半切）", "小雞爪。18kg（6kg一包）", "W6雞翅分。18kg（6kg一包）", "修清雞胸肉（帶皮）。20kg", "雞腿排去踝。20kg"] },
-            { id:7, name: "雜貨", lead: 1, off: [6,0], items: ["烹大師干貝粉", "二砂", "穀盛味醂", "金蘭醬油", "玉山白蘭地", "漂白水", "洗衣粉", "3斤花袋", "小抽衛生紙", "廚房擦手紙", "小磨坊香蒜粉", "拇指粗粒黑胡椒", "保鮮膜", "美食家沙拉油", "海鹽", "青花椒粒600g", "大紅袍粒600g", "抹布"] },
-            { id:8, name: "廚餘", lead: 1, off: [], items: ["廚餘回報。全年無休"] },
-            { id:9, name: "冰塊", lead: 1, off: [0], items: ["冰塊需求"] }
+            { id:5, name: "白蝦身與蝦頭", lead: 5, off: [6,0], items: ["白蝦80/100。24盒", "胭脂蝦頭。18包"] },
+            // 此處已更新為 [3, 0] (週三、週日)
+            { id:6, name: "雞肉商、牛頭", lead: 3, off: [3,0], items: ["雞胸骨。15kg", "雞油。5kg", "豬里肌油。5kg", "雞短頸去皮。12kg", "山雞1.5kg。2隻", "小雞爪。18kg", "W6雞翅分。18kg", "修清雞胸肉（帶皮）。20kg", "雞腿排去踝。20kg"] },
+            { id:7, name: "雞肉商、雞肉生鮮", lead: 3, off: [6,0], items: ["雞腿排去踝。20kg"] },
+            { id:8, name: "雜貨", lead: 1, off: [6,0], items: ["烹大師干貝粉。盒", "二砂。包", "穀盛味醂。罐", "金蘭醬油。桶", "玉山白蘭地。罐", "漂白水。罐", "洗衣粉。包", "3斤花袋。包", "小抽衛生紙。箱", "廚房擦手紙。箱", "小磨坊香蒜粉。包", "拇指粗粒黑胡椒。包", "保鮮膜。條", "美食家沙拉油。桶", "海鹽。盒", "青花椒粒600g。包", "大紅袍粒600g。包", "抹布。包"] },
+            { id:9, name: "廚餘", lead: 1, off: [], items: ["廚餘回報。次"] },
+            { id:10, name: "冰塊", lead: 1, off: [0], items: ["冰塊需求。包"] }
         ];
 
         let dailyValues = { "雞骨": 4, "雞油": 4, "豬里肌油": 1, "雞脖子": 0, "全雞": 0, "雞爪": 4, "雞翅": 4, "白蝦": 42, "蝦頭": 18, "雞湯": 4, "蝦湯": 4.3, "貝湯": 3.3, "珠貝油": 3 };
+        let lastDailyValues = null;
         let specialOffs = JSON.parse(localStorage.getItem('specialOffs')) || [];
+        let customItems = JSON.parse(localStorage.getItem('customItems')) || [];
+
+        const dayNames = ["日","一","二","三","四","五","六"];
+
+        function isThisDayOff(vId, offDays, targetDate) {
+            const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+            return specialOffs.some(s => s.vId == vId && s.date == dateStr) || offDays.includes(targetDate.getDay());
+        }
+
+        function getSafeOrderInfo(v) {
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            
+            let estArrival = new Date(today);
+            estArrival.setDate(estArrival.getDate() + v.lead);
+            
+            let isNoDelivery = isThisDayOff(v.id, v.off, estArrival);
+            
+            let safeArrival = new Date(estArrival);
+            while(isThisDayOff(v.id, v.off, safeArrival)) { 
+                safeArrival.setDate(safeArrival.getDate() + 1); 
+            }
+            
+            let deadlineOrderDate = new Date(safeArrival);
+            deadlineOrderDate.setDate(deadlineOrderDate.getDate() - v.lead);
+            const isDueToday = deadlineOrderDate.getTime() === today.getTime();
+
+            return {
+                arrivalDateText: `${safeArrival.getMonth()+1}/${safeArrival.getDate()}(${dayNames[safeArrival.getDay()]})`,
+                orderDeadlineText: `${deadlineOrderDate.getMonth()+1}/${deadlineOrderDate.getDate()}(${dayNames[deadlineOrderDate.getDay()]})`,
+                isDueToday: isDueToday,
+                isOffTomorrow: v.off.includes((today.getDay() + 1) % 7),
+                isNoDelivery: isNoDelivery,
+                offDaysText: v.off.map(d => dayNames[d]).join('、')
+            };
+        }
 
         function init() {
             renderDailyReportInputs();
@@ -100,88 +154,96 @@
             updateSmartAlert();
             renderVendorSelect();
             renderSpecialOffList();
-        }
-
-        // --- 設定開關 ---
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
-        }
-
-        function renderVendorSelect() {
-            document.getElementById('vendorSelect').innerHTML = vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-        }
-
-        function addSpecialOff() {
-            const vId = document.getElementById('vendorSelect').value;
-            const vName = vendors.find(v => v.id == vId).name;
-            const date = document.getElementById('specialOffDate').value;
-            if(!date) return;
-            specialOffs.push({ vId, vName, date });
-            localStorage.setItem('specialOffs', JSON.stringify(specialOffs));
-            renderSpecialOffList(); renderVendors(); updateSmartAlert();
-        }
-
-        function removeSpecialOff(index) {
-            specialOffs.splice(index, 1);
-            localStorage.setItem('specialOffs', JSON.stringify(specialOffs));
-            renderSpecialOffList(); renderVendors(); updateSmartAlert();
-        }
-
-        function renderSpecialOffList() {
-            document.getElementById('specialOffList').innerHTML = specialOffs.map((s, i) => `
-                <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center border border-red-200">
-                    ${s.vName}: ${s.date.split('-').slice(1).join('/')} <button onclick="removeSpecialOff(${i})" class="ml-1 font-bold">✕</button>
-                </span>
-            `).join('');
-        }
-
-        // --- 配送核心邏輯 ---
-        function isThisDayOff(vId, offDays, targetDate) {
-            const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
-            return specialOffs.some(s => s.vId == vId && s.date == dateStr) || offDays.includes(targetDate.getDay());
-        }
-
-        function getArrivalInfo(leadDays, offDays, vendorId) {
-            let arrivalDate = new Date();
-            arrivalDate.setDate(arrivalDate.getDate() + parseInt(leadDays));
-            let isConflict = isThisDayOff(vendorId, offDays, arrivalDate);
-            let suggestText = "";
-            let orderTimeText = "今日叫貨";
-
-            if (isConflict) {
-                let nextAvailable = new Date(arrivalDate);
-                for (let i = 1; i <= 10; i++) {
-                    nextAvailable.setDate(nextAvailable.getDate() + 1);
-                    if (!isThisDayOff(vendorId, offDays, nextAvailable)) {
-                        const dayName = ["日","一","二","三","四","五","六"][nextAvailable.getDay()];
-                        suggestText = `最近配送日：${nextAvailable.getMonth()+1}/${nextAvailable.getDate()} (${dayName})`;
-                        let bestOrderDate = new Date(nextAvailable);
-                        bestOrderDate.setDate(bestOrderDate.getDate() - parseInt(leadDays));
-                        orderTimeText = `建議 ${bestOrderDate.getMonth()+1}/${bestOrderDate.getDate()} 再叫貨`;
-                        break;
-                    }
-                }
-            }
-            return {
-                text: `${arrivalDate.getMonth()+1}/${arrivalDate.getDate()} (${["日","一","二","三","四","五","六"][arrivalDate.getDay()]})`,
-                isConflict, suggest: suggestText, orderTime: orderTimeText
-            };
+            renderCustomItems();
         }
 
         function updateSmartAlert() {
-            const tomorrow = (new Date().getDay() + 1) % 7;
             let alerts = [];
             vendors.forEach(v => {
-                const info = getArrivalInfo(v.lead, v.off, v.id);
-                if (v.off.includes(tomorrow)) alerts.push(`<span class="text-red-400">🚨 ${v.name}明天固定公休！</span>`);
-                if (info.isConflict) alerts.push(`<span class="text-yellow-400 font-bold">⚠️ 注意：${v.name}預計到貨日撞到公休！${info.suggest}</span>`);
+                const info = getSafeOrderInfo(v);
+                if (info.isDueToday) {
+                    alerts.push(`<span class="text-orange-400">🔥 今天叫貨：${v.name} → 到貨：${info.arrivalDateText}</span>`);
+                }
             });
             const alertBoxContainer = document.getElementById('smartAlert');
             if (alerts.length > 0) {
                 alertBoxContainer.style.display = 'block';
                 document.getElementById('alertBox').innerHTML = alerts.map(a => `<div>${a}</div>`).join('');
             } else alertBoxContainer.style.display = 'none';
+        }
+
+        function renderVendors() {
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = vendors.map(v => {
+                const info = getSafeOrderInfo(v);
+                let cardStatus = info.isDueToday ? 'is-danger' : (info.isOffTomorrow ? 'is-warning' : '');
+                let deliveryClass = info.isNoDelivery ? 'jump-animation text-red-500 font-black' : 'text-green-600 font-bold';
+                let deliveryText = info.isNoDelivery ? '無配送' : '到貨';
+
+                return `
+                    <div class="vendor-card ${cardStatus}">
+                        <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-start">
+                            <div class="space-y-1">
+                                <div class="font-black text-slate-800 text-base leading-tight">${v.name}</div>
+                                <div class="text-[10px] text-red-600 font-black">‼️ 提前 ${v.lead} 天叫貨</div>
+                                <div class="text-[10px] text-slate-400 font-bold">🚫 公休日：(${info.offDaysText || '無'})</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[11px] text-indigo-600 font-black">📅 建議日：${info.orderDeadlineText}</div>
+                                <div class="text-[10px] ${deliveryClass}">
+                                    🚚 ${info.arrivalDateText}${deliveryText}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-2 space-y-1" id="vendor-${v.id}">
+                            ${v.items.map(item => `
+                                <label class="flex items-center p-2 rounded-lg text-sm active:bg-slate-100 cursor-pointer">
+                                    <input type="checkbox" class="w-6 h-6 rounded mr-3" onchange="this.parentElement.classList.toggle('checked', this.checked)">
+                                    <span class="flex-1 text-slate-700 font-medium">${item}</span>
+                                    <div class="flex gap-2">
+                                        <input type="number" placeholder="量" class="qty-input w-10 border-b-2 border-slate-300 text-center outline-none font-black text-lg bg-transparent">
+                                        <input type="number" placeholder="庫" class="stock-input w-10 border-b-2 border-blue-200 text-center outline-none text-xs text-blue-500 bg-transparent">
+                                    </div>
+                                </label>`).join('')}
+                        </div>
+                        <div class="flex border-t">
+                            <button onclick="copyVendorData(${v.id}, 'qty')" class="flex-1 py-4 bg-slate-800 text-white font-black text-xs hover:bg-black active:bg-slate-700 transition-colors border-r border-slate-700">
+                                📋 複製【數量】
+                            </button>
+                            <button onclick="copyVendorData(${v.id}, 'stock')" class="flex-1 py-4 bg-slate-800 text-white font-black text-xs hover:bg-black active:bg-slate-700 transition-colors">
+                                📦 複製【庫存】
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function copyVendorData(vId, mode) {
+            const card = document.getElementById(`vendor-${vId}`);
+            const vendor = vendors.find(v => v.id === vId);
+            let text = mode === 'qty' ? `【${vendor.name} 叫貨清單】\n` : `【${vendor.name} 庫存盤點】\n`;
+            let hasSelected = false;
+            card.querySelectorAll('label').forEach(label => {
+                if(label.querySelector('input[type="checkbox"]').checked) {
+                    hasSelected = true;
+                    let fullItemText = label.querySelector('.flex-1').innerText.trim();
+                    const qty = label.querySelector('.qty-input').value;
+                    const stock = label.querySelector('.stock-input').value;
+                    if (mode === 'qty') {
+                        if (qty) {
+                            if (fullItemText.includes('。') && /\d+/.test(fullItemText)) {
+                                text += `${fullItemText.replace(/\d+/, qty)}\n`;
+                            } else { text += `${fullItemText} ${qty}\n`; }
+                        } else { text += `${fullItemText}\n`; }
+                    } else {
+                        let cleanName = fullItemText.split('。')[0];
+                        text += `${cleanName} 庫存:${stock || '0'}\n`;
+                    }
+                }
+            });
+            if(!hasSelected) { alert("請先勾選品項！"); return; }
+            navigator.clipboard.writeText(text.trim());
+            alert(`✅ ${vendor.name} ${mode === 'qty' ? '訂單' : '庫存'}已複製`);
         }
 
         function renderDailyReportInputs() {
@@ -192,66 +254,81 @@
                 return `<div class="grid grid-cols-2 gap-3">${fs.map(f => `
                     <div class="flex items-center justify-between p-2 rounded-lg ${g.s ? 'soup-style' : 'bg-slate-700/50'}">
                         <span class="text-sm font-medium ${g.s ? 'text-orange-900' : 'text-slate-200'}">${f}</span>
-                        <input type="number" step="0.1" value="${dailyValues[f]}" onchange="dailyValues['${f}']=this.value" class="w-14 bg-white text-slate-900 text-center rounded font-bold py-1 outline-none border border-slate-500">
+                        <input type="number" step="0.1" value="${dailyValues[f]}" onchange="dailyValues['${f}']=this.value" class="w-14 bg-white text-slate-900 text-center rounded font-bold py-1 outline-none">
                     </div>`).join('')}</div>`;
             }).join('<div class="h-[1px] bg-slate-600 opacity-20 my-1"></div>');
         }
 
-        function renderVendors() {
-            const container = document.getElementById('categoryContainer');
-            container.innerHTML = vendors.map(v => {
-                const info = getArrivalInfo(v.lead, v.off, v.id);
-                const isOffTomorrow = v.off.includes((new Date().getDay() + 1) % 7);
-                let cardClass = isOffTomorrow ? 'is-off-tomorrow border-red-400' : (info.isConflict ? 'is-arrival-conflict border-amber-400' : 'border-slate-200');
-                return `
-                    <div class="bg-white rounded-xl border ${cardClass} overflow-hidden shadow-sm">
-                        <div class="bg-slate-50 px-4 py-2 border-b flex justify-between items-start">
-                            <div>
-                                <div class="font-black text-slate-800 text-sm">${v.name}</div>
-                                <div class="text-[10px] ${info.isConflict ? 'text-red-500 font-bold' : 'text-slate-500'}">⏰ ${info.orderTime}</div>
-                            </div>
-                            <div class="text-right text-[10px]">
-                                <div class="${isOffTomorrow ? 'text-red-500 font-bold' : 'text-slate-400'}">公休: ${v.off.map(d=>["日","一","二","三","四","五","六"][d]).join(',')}</div>
-                                <div class="${info.isConflict ? 'text-red-600 font-black' : 'text-indigo-600 font-bold'}">
-                                    <span class="${info.isConflict ? 'animate-bounce-custom' : ''}">🚚 ${info.text} ${info.isConflict ? '無配送' : '到貨'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-2 space-y-1">
-                            ${v.items.map(item => `<label class="flex items-center p-2 rounded-lg text-sm active:bg-slate-100 cursor-pointer"><input type="checkbox" class="w-5 h-5 rounded mr-3" onchange="this.parentElement.classList.toggle('checked', this.checked)"><span class="flex-1 text-slate-600">${item}</span><input type="number" placeholder="量" class="w-12 border-b border-slate-300 text-center outline-none font-bold"></label>`).join('')}
-                        </div>
-                    </div>`;
-            }).join('');
+        function resetDailyNumbers() {
+            lastDailyValues = JSON.parse(JSON.stringify(dailyValues));
+            Object.keys(dailyValues).forEach(k => dailyValues[k] = 0);
+            renderDailyReportInputs();
         }
 
-        function addCustomItem() {
-            const name = document.getElementById('customName').value;
-            if(!name) return;
-            const div = document.createElement('div');
-            div.className = "flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm";
-            div.innerHTML = `<input type="checkbox" class="w-5 h-5 mr-3" onchange="this.parentElement.classList.toggle('checked', this.checked)"><span class="flex-1 text-sm font-medium text-slate-700">${name}</span><button onclick="this.parentElement.remove()" class="text-slate-300 ml-2">✕</button>`;
-            document.getElementById('customList').appendChild(div);
-            document.getElementById('customName').value = "";
+        function restoreDailyValues() {
+            if(lastDailyValues) { dailyValues = JSON.parse(JSON.stringify(lastDailyValues)); renderDailyReportInputs(); }
         }
 
         function copyDailyReport() {
             let text = "";
             const groups = [["雞骨", "雞油", "豬里肌油"], ["雞脖子", "全雞"], ["雞爪", "雞翅"], ["白蝦", "蝦頭"], ["雞湯", "蝦湯", "貝湯"], ["珠貝油"]];
-            groups.forEach(g => { g.forEach(f => { let v = dailyValues[f] || 0; let u = f==="蝦頭"?"包":f==="白蝦"?"盒":(f.includes("湯")||f.includes("油")?"":"份"); text += `${f}。${v}${u}\n`; }); text += "\n"; });
+            groups.forEach(g => { 
+                g.forEach(f => { 
+                    let v = dailyValues[f] || 0; 
+                    let u = "份"; 
+                    if (f === "白蝦") u = "盒"; else if (f === "蝦頭") u = "包";
+                    text += `${f}。${v}${u}\n`; 
+                }); 
+                text += "\n"; 
+            });
             navigator.clipboard.writeText(text.trim());
-            alert("✅ 已複製到剪貼簿！");
+            alert("✅ 每日回報量已複製");
         }
 
-        function resetAllNumbers() { 
-            if(confirm("確定歸零所有數量嗎？")) { 
-                document.querySelectorAll('input[type="number"]').forEach(i => i.value = ""); 
-                Object.keys(dailyValues).forEach(k => dailyValues[k] = 0); 
-                renderDailyReportInputs(); 
-            } 
+        function addCustomItem() {
+            const name = document.getElementById('customName').value;
+            if(!name) return;
+            customItems.push({ name, checked: false });
+            localStorage.setItem('customItems', JSON.stringify(customItems));
+            renderCustomItems();
+            document.getElementById('customName').value = "";
         }
 
-        function resetCheckboxes() { 
-            document.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = false; i.parentElement.classList.remove('checked'); }); 
+        function renderCustomItems() {
+            const container = document.getElementById('customList');
+            container.innerHTML = customItems.map((item, index) => `
+                <div class="flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm ${item.checked ? 'checked' : ''} transition-all">
+                    <input type="checkbox" class="w-5 h-5 mr-3" ${item.checked ? 'checked' : ''} onchange="toggleCustom(${index})">
+                    <span class="flex-1 text-sm font-medium text-slate-700">${item.name}</span>
+                    <button onclick="removeCustom(${index})" class="text-red-300 ml-2">✕</button>
+                </div>`).join('');
+        }
+
+        function toggleCustom(index) { customItems[index].checked = !customItems[index].checked; localStorage.setItem('customItems', JSON.stringify(customItems)); renderCustomItems(); }
+        function removeCustom(index) { customItems.splice(index, 1); localStorage.setItem('customItems', JSON.stringify(customItems)); renderCustomItems(); }
+        function toggleSettings() { const p = document.getElementById('settingsPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
+        function renderVendorSelect() { document.getElementById('vendorSelect').innerHTML = vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join(''); }
+        function addSpecialOff() {
+            const vId = document.getElementById('vendorSelect').value;
+            const vName = vendors.find(v => v.id == vId).name;
+            const date = document.getElementById('specialOffDate').value;
+            if(!date) return;
+            specialOffs.push({ vId, vName, date });
+            localStorage.setItem('specialOffs', JSON.stringify(specialOffs));
+            renderSpecialOffList(); renderVendors(); updateSmartAlert();
+        }
+        function renderSpecialOffList() {
+            document.getElementById('specialOffList').innerHTML = specialOffs.map((s, i) => `
+                <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center border border-red-200">
+                    ${s.vName}: ${s.date.split('-').slice(1).join('/')} <button onclick="removeSpecialOff(${i})" class="ml-1 font-bold">✕</button>
+                </span>`).join('');
+        }
+        function removeSpecialOff(i) { specialOffs.splice(i, 1); localStorage.setItem('specialOffs', JSON.stringify(specialOffs)); renderSpecialOffList(); renderVendors(); updateSmartAlert(); }
+        function resetCheckboxes() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(i => { i.checked = false; i.parentElement.classList.remove('checked'); });
+            customItems.forEach(item => item.checked = false);
+            localStorage.setItem('customItems', JSON.stringify(customItems));
+            renderCustomItems();
         }
 
         init();
